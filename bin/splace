@@ -1,0 +1,149 @@
+#!/bin/bash
+##
+## Copyright 2019 Luis_Pulido_Diaz
+##
+## Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),      ##
+## to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,      ##
+## and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:              ##
+##                                                                                                                                                         ##
+## The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.                          ##
+##                                                                                                                                                         ##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,     ##
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER      ##
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS    ##
+## IN THE SOFTWARE.
+##
+PROGRAM_NAME="splace"
+PROGRAM_VERSION="0.1"
+## Replace the > in the CONSOLE_THINGY
+## with your own string like ~$ or ~#
+## or whatever need. Leave a space for
+## better esthetics in the console.
+CONSOLE_THINGY="> "
+PLACED="$HOME/lkso.data/$PROGRAM_NAME"
+PLACEF="$PLACED/.placesfile"
+place(){
+	case "$1" in
+		--version) echo "$PROGRAM_VERSION"; ;;
+		--help)
+			cat <<EOF
+
+$PROGRAM_NAME
+   Version $PROGRAM_VERSION
+
+This program uses openssl to store your places encrypted. It is for experimental purposes.
+This is a fork of the original "place" program.
+
+usage:
+	splace s				Saves the current directory
+	splace l				Prints out the last saved directory
+	splace p				Pops the last saved directory (outputs and removes it)
+
+	splace n x			Prints the x'th stored place, from newest to oldest
+
+					This is a super simple implementation of a lifo queue written
+					in bash for you to store your places.
+
+	splace --version 		Shows place version.
+	splace --help 			Shows this screen.
+EOF
+	;;
+	*)
+		run "$@"
+	;;
+	esac
+}
+check_placef(){
+	if [ ! -f "$PLACEF" ] ; then
+		mkdir -p "$PLACED"
+		touch "$PLACEF"
+	fi
+}
+encrypt(){
+	if [[ ! -f "$PLACED/$KEYF" ]] ; then
+		echo "E: Key file is not present" >&2
+		echo "You can generate one with --build option" >&2
+		echo "but you will not be able to decrypt past messages" >&2
+		echo "if they are present. You will need the previous key" >&2
+		echo "the key file lives in $PLACED with the name $KEYF" >&2
+		exit 1
+	fi
+	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	touch "$tmpfile"
+	echo "$@" >> "$tmpfile"
+	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
+	key="$(<$PLACED/$KEYF)"
+	openssl rsautl -encrypt -inkey "$PLACED/$PKEYF" -pubin -in "$tmpfile" -out "$tmpfilee"
+	base64 -w 0 "$tmpfilee"
+	rm "$tmpfile" "$tmpfilee"
+}
+decrypt(){
+	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
+	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	echo "$@" | base64 -d >> "$tmpfile"
+	openssl rsautl -decrypt -inkey "$PLACED/$KEYF" -in "$tmpfile" -out "$tmpfilee"
+	echo "$(<$tmpfilee)"
+	rm "$tmpfile" "$tmpfilee"
+}
+KEYF=".spkey.pem"
+PKEYF=".ppkey.pem"
+build(){
+	if [[ ! -x "$(command -v openssl)" ]] ; then
+		echo "E: This program requires openssl" >&2
+		exit 1
+	fi
+	openssl genrsa -out "$PLACED/$KEYF" 1024 >/dev/null 2>&1
+	openssl rsa -in "$PLACED/$KEYF" -out "$PLACED/$PKEYF" -outform PEM -pubout >/dev/null 2>&1
+	mkdir -p "$PLACED"
+	touch "$PLACED/$KEYF"
+	echo "$key" >> "$PLACED/$KEYF" -out "$PLACED/$PKEYF"
+}
+run(){
+	check_placef
+	case "$1" in
+		--build)
+			case "$2" in
+				--force) ;;
+				*)
+					read -p "Sure? y/n "
+					case "$REPLY" in
+						y|yes) ;;
+						n|no)
+							echo "Bye"
+							exit 0
+						;;
+					esac
+				;;
+			esac
+			build
+			echo "Done"
+		;;
+		s)
+			echo "$(encrypt $(pwd))" >> "$PLACEF"
+			echo "Done"
+		;;
+		l)
+			decrypt "$(tail -n 1 $PLACEF)"
+		;;
+		p)
+			lastb="$(tail -n 1 $PLACEF)"
+
+
+			head -n -1 "$PLACEF" > "$PLACED/tmpfile"
+			mv "$PLACED/tmpfile" "$PLACEF"
+			decrypt "$lastb"
+		;;
+		n)
+			maxn="$(cat $PLACEF | wc -l)"
+			if [[ "$2" -gt "$maxn" || "$2" -lt 1 ]] ; then
+				echo "E: Max number is $maxn" >&2
+				exit
+			fi
+			decrypt "$(tail -n $2 $PLACEF | head -n 1)"
+		;;
+		*)
+			place --help
+		;;
+	esac
+}
+place "$@"
