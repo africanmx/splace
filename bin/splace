@@ -91,9 +91,6 @@ build(){
 	fi
 	openssl genrsa -out "$PLACED/$KEYF" 1024 >/dev/null 2>&1
 	openssl rsa -in "$PLACED/$KEYF" -out "$PLACED/$PKEYF" -outform PEM -pubout >/dev/null 2>&1
-	mkdir -p "$PLACED"
-	touch "$PLACED/$KEYF"
-	echo "$key" >> "$PLACED/$KEYF" -out "$PLACED/$PKEYF"
 }
 check_empty(){
 	if [[ "$(cat $PLACEF | wc -l)" -lt 1 ]] ; then
