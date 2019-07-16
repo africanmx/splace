@@ -62,10 +62,7 @@ check_placef(){
 encrypt(){
 	if [[ ! -f "$PLACED/$KEYF" ]] ; then
 		echo "E: Key file is not present" >&2
-		echo "You can generate one with --build option" >&2
-		echo "but you will not be able to decrypt past messages" >&2
-		echo "if they are present. You will need the previous key" >&2
-		echo "the key file lives in $PLACED with the name $KEYF" >&2
+		echo "   Try creating the pair with --build" >&2
 		exit 1
 	fi
 	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
@@ -98,6 +95,12 @@ build(){
 	touch "$PLACED/$KEYF"
 	echo "$key" >> "$PLACED/$KEYF" -out "$PLACED/$PKEYF"
 }
+check_empty(){
+	if [[ "$(cat $PLACEF | wc -l)" -lt 1 ]] ; then
+		echo "Bookmarks are empty"
+		exit
+	fi
+}
 run(){
 	check_placef
 	case "$1" in
@@ -123,12 +126,12 @@ run(){
 			echo "Done"
 		;;
 		l)
+			check_empty
 			decrypt "$(tail -n 1 $PLACEF)"
 		;;
 		p)
+			check_empty
 			lastb="$(tail -n 1 $PLACEF)"
-
-
 			head -n -1 "$PLACEF" > "$PLACED/tmpfile"
 			mv "$PLACED/tmpfile" "$PLACEF"
 			decrypt "$lastb"
