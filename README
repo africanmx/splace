@@ -1,0 +1,19 @@
+splace
+  Version 0.1
+
+This program uses openssl to store your places encrypted. It is for experimental purposes.
+This is a fork of the original "place" program.
+
+usage:
+        splace s                                Saves the current directory
+        splace l                                Prints out the last saved directory
+        splace p                                Pops the last saved directory (outputs and removes it)
+
+        splace n x                      Prints the x'th stored place, from newest to oldest
+
+                                        This is a super simple implementation of a lifo queue written
+                                        in bash for you to store your places.
+
+        splace --version                Shows place version.
+        splace --help                   Shows this screen.
+        
