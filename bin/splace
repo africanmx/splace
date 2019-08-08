@@ -14,7 +14,9 @@
 ## IN THE SOFTWARE.
 ##
 PROGRAM_NAME="splace"
-PROGRAM_VERSION="0.1"
+PROGRAM_VERSION="0.2"
+### changeset
+### # 0.1-0.2 added --all option and made cygwin and busybox compatible
 ## Replace the > in the CONSOLE_THINGY
 ## with your own string like ~$ or ~#
 ## or whatever need. Leave a space for
