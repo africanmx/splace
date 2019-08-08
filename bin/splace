@@ -39,10 +39,11 @@ usage:
 	splace l				Prints out the last saved directory
 	splace p				Pops the last saved directory (outputs and removes it)
 
-	splace n x			Prints the x'th stored place, from newest to oldest
+	splace n x				Prints the x'th stored place, from newest to oldest
 
-					This is a super simple implementation of a lifo queue written
-					in bash for you to store your places.
+						This is a super simple implementation of a lifo queue written
+						in bash for you to store your places.
+	$(basename $0) --all			Prints all the places
 
 	splace --version 		Shows place version.
 	splace --help 			Shows this screen.
@@ -65,18 +66,19 @@ encrypt(){
 		echo "   Try creating the pair with --build" >&2
 		exit 1
 	fi
-	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	tmpfile="$PLACED/$(date +%s)$(( RANDOM%9999 )).txt"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
 	touch "$tmpfile"
 	echo "$@" >> "$tmpfile"
-	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
 	key="$(<$PLACED/$KEYF)"
 	openssl rsautl -encrypt -inkey "$PLACED/$PKEYF" -pubin -in "$tmpfile" -out "$tmpfilee"
 	base64 -w 0 "$tmpfilee"
 	rm "$tmpfile" "$tmpfilee"
 }
 decrypt(){
-	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
-	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	tmpfile="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).txt"
 	echo "$@" | base64 -d >> "$tmpfile"
 	openssl rsautl -decrypt -inkey "$PLACED/$KEYF" -in "$tmpfile" -out "$tmpfilee"
 	echo "$(<$tmpfilee)"
@@ -140,6 +142,12 @@ run(){
 				exit
 			fi
 			decrypt "$(tail -n $2 $PLACEF | head -n 1)"
+		;;
+		--all)
+			maxn="$(cat $PLACEF | wc -l)"
+			for (( i=1 ; i<$(( $maxn+1 )) ; i++ )) ; do
+				decrypt "$(cat $PLACEF | tail -n $i | head -n 1)"
+			done
 		;;
 		*)
 			place --help
