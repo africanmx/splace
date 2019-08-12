@@ -14,7 +14,8 @@
 ## IN THE SOFTWARE.
 ##
 PROGRAM_NAME="splace"
-PROGRAM_VERSION="0.1"
+PROGRAM_VERSION="0.2"
+# 0.1-0.2 added --all option
 ## Replace the > in the CONSOLE_THINGY
 ## with your own string like ~$ or ~#
 ## or whatever need. Leave a space for
@@ -43,6 +44,7 @@ usage:
 
 					This is a super simple implementation of a lifo queue written
 					in bash for you to store your places.
+	splace --all			Prints al splaces
 
 	splace --version 		Shows place version.
 	splace --help 			Shows this screen.
@@ -118,6 +120,12 @@ run(){
 			build
 			echo "Done"
 		;;
+		--all)
+			check_empty
+			for i in $(seq 1 $(( $(cat $PLACEF | wc -l)-1 ))) ; do
+				decrypt $(cat $PLACEF | tail -n $i | head -n 1)
+			done
+		;;
 		s)
 			echo "$(encrypt $(pwd))" >> "$PLACEF"
 			echo "Done"
@@ -134,11 +142,9 @@ run(){
 			decrypt "$lastb"
 		;;
 		n)
-			maxn="$(cat $PLACEF | wc -l)"
-			if [[ "$2" -gt "$maxn" || "$2" -lt 1 ]] ; then
-				echo "E: Max number is $maxn" >&2
-				exit
-			fi
+			maxn="$(($(cat $PLACEF | wc -l)-1))"
+			test "$2" -gt "$maxn" && echo "E: Max is $maxn" >&2 && exit
+			test "$2" -lt 1 && echo "E: Only accepts from 1 to $maxn" >&2 && exit
 			decrypt "$(tail -n $2 $PLACEF | head -n 1)"
 		;;
 		*)
