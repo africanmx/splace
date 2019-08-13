@@ -16,11 +16,6 @@
 PROGRAM_NAME="splace"
 PROGRAM_VERSION="0.2"
 # 0.1-0.2 added --all option
-## Replace the > in the CONSOLE_THINGY
-## with your own string like ~$ or ~#
-## or whatever need. Leave a space for
-## better esthetics in the console.
-CONSOLE_THINGY="> "
 PLACED="$HOME/lkso.data/$PROGRAM_NAME"
 PLACEF="$PLACED/.placesfile"
 place(){
@@ -40,14 +35,14 @@ usage:
 	splace l				Prints out the last saved directory
 	splace p				Pops the last saved directory (outputs and removes it)
 
-	splace n x			Prints the x'th stored place, from newest to oldest
+	splace n x				Prints the x'th stored place, from newest to oldest
 
-					This is a super simple implementation of a lifo queue written
-					in bash for you to store your places.
-	splace --all			Prints al splaces
+						This is a super simple implementation of a lifo queue written
+						in bash for you to store your places.
+	splace --all				Prints al splaces
 
-	splace --version 		Shows place version.
-	splace --help 			Shows this screen.
+	splace --version 			Shows place version.
+	splace --help 				Shows this screen.
 EOF
 	;;
 	*)
@@ -67,18 +62,19 @@ encrypt(){
 		echo "   Try creating the pair with --build" >&2
 		exit 1
 	fi
-	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	tmpfile="$PLACED/$(date +%s)$(( RANDOM%9999 )).txt"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
 	touch "$tmpfile"
 	echo "$@" >> "$tmpfile"
-	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
 	key="$(<$PLACED/$KEYF)"
 	openssl rsautl -encrypt -inkey "$PLACED/$PKEYF" -pubin -in "$tmpfile" -out "$tmpfilee"
 	base64 -w 0 "$tmpfilee"
 	rm "$tmpfile" "$tmpfilee"
 }
 decrypt(){
-	tmpfile="$PLACED/$(cat /proc/sys/kernel/random/uuid).dat"
-	tmpfilee="$PLACED/$(cat /proc/sys/kernel/random/uuid).txt"
+	tmpfile="$PLACED/$(date +%s)$(( RANDOM%9999 )).dat"
+	tmpfilee="$PLACED/$(date +%s)$(( RANDOM%9999 )).txt"
 	echo "$@" | base64 -d >> "$tmpfile"
 	openssl rsautl -decrypt -inkey "$PLACED/$KEYF" -in "$tmpfile" -out "$tmpfilee"
 	echo "$(<$tmpfilee)"
